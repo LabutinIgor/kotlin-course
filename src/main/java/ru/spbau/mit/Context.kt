@@ -15,7 +15,7 @@ class Context {
 
     fun addVariable(name: String, value: Int? = null) {
         if (scopeContexts.last().containsVariable(name)) {
-            throw RedefineVariableException()
+            throw RedefineVariableException("Redefine variable")
         } else {
             scopeContexts.last().addVariable(name, value)
         }
@@ -23,7 +23,7 @@ class Context {
 
     fun addFunction(name: String, value: FunParser.FunctionContext) {
         if (scopeContexts.last().containsFunction(name)) {
-            throw RedefineFunctionException()
+            throw RedefineFunctionException("Redefine function")
         } else {
             scopeContexts.last().addFunction(name, value)
         }
@@ -36,18 +36,18 @@ class Context {
                 return
             }
         }
-        throw UndefinedVariableException()
+        throw UndefinedVariableException("Undefined variable")
     }
 
-    fun getVariable(name: String): Int? {
-//        System.err.println("get " + name + " " + scopeContexts.size)
-//        System.err.println(scopeContexts.last().containsVariable(name))
-        for (i in scopeContexts.size - 1 downTo 0) {
-            if (scopeContexts[i].containsVariable(name)) {
-                return scopeContexts[i].getVariable(name)
-            }
-        }
-        throw UndefinedVariableException()
+    fun getVariable(name: String): Int {
+        (scopeContexts.size - 1 downTo 0)
+                .asSequence()
+                .filter { scopeContexts[it].containsVariable(name) }
+                .forEach {
+                    return scopeContexts[it].getVariable(name) ?:
+                            throw UninitializedVariableException("Uninitialized variable")
+                }
+        throw UndefinedVariableException("Undefined variable")
     }
 
     fun getFunction(name: String): FunParser.FunctionContext {
@@ -55,7 +55,7 @@ class Context {
                 .firstOrNull { scopeContexts[it].containsFunction(name) }
                 ?.let { scopeContexts[it].getFunction(name) }
         if (f == null) {
-            throw UndefinedFunctionException()
+            throw UndefinedFunctionException("Undefined function")
         } else {
             return f
         }

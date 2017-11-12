@@ -11,9 +11,11 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
 
     override fun visitBlock(ctx: FunParser.BlockContext): Int? {
         context.enterScope()
-        for (child in ctx.children) {
-            val res = visit(child)
-            if (res != null) {
+        for (statement in ctx.statement()) {
+            val res = visit(statement)
+            if (res != null && (statement.returnStatement() != null
+                    || statement.ifStatement() != null
+                    || statement.whileStatement() != null)) {
                 context.leaveScope()
                 return res
             }
@@ -29,8 +31,9 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     override fun visitFunction(ctx: FunParser.FunctionContext): Int? {
         try {
             context.addFunction(ctx.IDENTIFIER().text, ctx)
-        } catch (e: RedefineFunctionException) {
-            throw RedefineFunctionException("Function redefined", ctx.start.line)
+        } catch (e: FunException) {
+            e.line = ctx.start.line
+            throw e
         }
         return null
     }
@@ -44,8 +47,9 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         }
         try {
             context.addVariable(name = name.text, value = value)
-        } catch (e: RedefineVariableException) {
-            throw RedefineVariableException("Variable redefined", ctx.start.line)
+        } catch (e: FunException) {
+            e.line = ctx.start.line
+            throw e
         }
         return null
     }
@@ -74,8 +78,9 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     override fun visitAssignment(ctx: FunParser.AssignmentContext): Int? {
         try {
             context.setVariable(ctx.IDENTIFIER().text, visit(ctx.expression()))
-        } catch (e: UndefinedVariableException) {
-            throw UndefinedVariableException("Undefined variable", ctx.start.line)
+        } catch (e: FunException) {
+            e.line = ctx.start.line
+            throw e
         }
         return null
     }
@@ -84,7 +89,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         return visit(ctx.expression())
     }
 
-    private fun applyBinaryOperation(leftRes: Int?, rightRes: Int?, operation: String): Int? {
+    private fun applyBinaryOperation(leftRes: Int?, rightRes: Int?, operation: String, line: Int): Int? {
         if (leftRes == null || rightRes == null) {
             return null
         }
@@ -117,15 +122,15 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
                 leftRes + rightRes
             "%" ->
                 if (rightRes == 0) {
-                    throw DivisionByZeroException("Division by zero")
+                    throw DivisionByZeroException("Division by zero", line)
                 } else {
                     leftRes % rightRes
                 }
             "/" ->
                 if (rightRes == 0) {
-                    throw DivisionByZeroException()
+                    throw DivisionByZeroException("Division by zero", line)
                 } else {
-                    leftRes % rightRes
+                    leftRes / rightRes
                 }
             "*" -> leftRes * rightRes
             else -> 0
@@ -138,7 +143,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
             leftRes
         } else {
             val rightRes = visit(ctx.expression())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY6().text)
+            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY6().text, ctx.start.line)
         }
     }
 
@@ -148,7 +153,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
             leftRes
         } else {
             val rightRes = visit(ctx.expressionPriority5())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY5().text)
+            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY5().text, ctx.start.line)
         }
     }
 
@@ -158,7 +163,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
             leftRes
         } else {
             val rightRes = visit(ctx.expressionPriority4())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY4().text)
+            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY4().text, ctx.start.line)
         }
     }
 
@@ -168,7 +173,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
             leftRes
         } else {
             val rightRes = visit(ctx.expressionPriority3())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY3().text)
+            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY3().text, ctx.start.line)
         }
     }
 
@@ -178,7 +183,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
             leftRes
         } else {
             val rightRes = visit(ctx.expressionPriority2())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY2().text)
+            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY2().text, ctx.start.line)
         }
     }
 
@@ -188,7 +193,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
             leftRes
         } else {
             val rightRes = visit(ctx.expressionPriority1())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY1().text)
+            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY1().text, ctx.start.line)
         }
     }
 
@@ -198,14 +203,16 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
             ctx.IDENTIFIER() != null ->
                 try {
                     context.getVariable(ctx.IDENTIFIER().text)
-                } catch (e: UndefinedVariableException) {
-                    throw UndefinedVariableException("Undefined variable", ctx.start.line)
+                } catch (e: FunException) {
+                    e.line = ctx.start.line
+                    throw e
                 }
             ctx.LITERAL() != null -> {
                 try {
                     ctx.LITERAL().text.toInt()
-                } catch (e: NumberFormatException) {
-                    throw NumberOverflowException("Number overflow", ctx.start.line)
+                } catch (e: FunException) {
+                    e.line = ctx.start.line
+                    throw e
                 }
             }
             ctx.expression() != null -> visit(ctx.expression())
@@ -213,11 +220,11 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         }
     }
 
-    private fun evaluateFunction(function: FunParser.FunctionContext, args: MutableList<Int?>): Int? {
+    private fun evaluateFunction(function: FunParser.FunctionContext, args: MutableList<Int?>, line: Int): Int? {
         val names: MutableList<String> = mutableListOf()
         function.parameterNames().IDENTIFIER().mapTo(names) { it.text }
         if (names.size != args.size) {
-            throw IncorrectNumberOfArgsException("Incorrect number of arguments")
+            throw IncorrectNumberOfArgsException("Incorrect number of arguments", line)
         }
 
         context.enterScope()
@@ -235,13 +242,14 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         ctx.arguments().expression().mapTo(args) { visit(it) }
         return if (name == "println") {
             out.println(args.joinToString(" "))
-            null
+            0
         } else {
             try {
                 val function = context.getFunction(name)
-                evaluateFunction(function, args)
-            } catch (e: UndefinedFunctionException) {
-                throw UndefinedFunctionException("Undefined function", ctx.start.line)
+                evaluateFunction(function, args, ctx.start.line)
+            } catch (e: FunException) {
+                e.line = ctx.start.line
+                throw e
             }
         }
     }
