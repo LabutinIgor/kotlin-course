@@ -3,7 +3,7 @@ package ru.spbau.mit
 import ru.spbau.mit.parser.FunParser
 
 class Context {
-    var scopeContexts: MutableList<ScopeContext> = arrayListOf(ScopeContext())
+    private var scopeContexts: MutableList<ScopeContext> = arrayListOf(ScopeContext())
 
     fun enterScope() {
         scopeContexts.add(ScopeContext())
@@ -30,23 +30,28 @@ class Context {
     }
 
     fun setVariable(name: String, value: Int?) {
-        if (scopeContexts.last().containsVariable(name)) {
-            scopeContexts.last().setVariable(name, value)
-        } else {
-            throw UndefinedVariableException()
+        for (i in scopeContexts.size - 1 downTo 0) {
+            if (scopeContexts[i].containsVariable(name)) {
+                scopeContexts[i].setVariable(name, value)
+                return
+            }
         }
+        throw UndefinedVariableException()
     }
 
     fun getVariable(name: String): Int? {
-        (scopeContexts.size - 1..0)
-                .asSequence()
-                .filter { scopeContexts[it].containsVariable(name) }
-                .forEach { return scopeContexts[it].getVariable(name) }
+//        System.err.println("get " + name + " " + scopeContexts.size)
+//        System.err.println(scopeContexts.last().containsVariable(name))
+        for (i in scopeContexts.size - 1 downTo 0) {
+            if (scopeContexts[i].containsVariable(name)) {
+                return scopeContexts[i].getVariable(name)
+            }
+        }
         throw UndefinedVariableException()
     }
 
     fun getFunction(name: String): FunParser.FunctionContext {
-        val f = (scopeContexts.size - 1..0)
+        val f = (scopeContexts.size - 1 downTo 0)
                 .firstOrNull { scopeContexts[it].containsFunction(name) }
                 ?.let { scopeContexts[it].getFunction(name) }
         if (f == null) {
