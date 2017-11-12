@@ -3,7 +3,7 @@ package ru.spbau.mit
 import ru.spbau.mit.parser.FunParser
 
 class Context {
-    var scopeContexts: MutableList<ScopeContext> = arrayListOf()
+    var scopeContexts: MutableList<ScopeContext> = arrayListOf(ScopeContext())
 
     fun enterScope() {
         scopeContexts.add(ScopeContext())
@@ -14,11 +14,27 @@ class Context {
     }
 
     fun addVariable(name: String, value: Int? = null) {
-        scopeContexts.last().addVariable(name, value)
+        if (scopeContexts.last().containsVariable(name)) {
+            throw RedefineVariableException()
+        } else {
+            scopeContexts.last().addVariable(name, value)
+        }
     }
 
     fun addFunction(name: String, value: FunParser.FunctionContext) {
-        scopeContexts.last().addFunction(name, value)
+        if (scopeContexts.last().containsFunction(name)) {
+            throw RedefineFunctionException()
+        } else {
+            scopeContexts.last().addFunction(name, value)
+        }
+    }
+
+    fun setVariable(name: String, value: Int?) {
+        if (scopeContexts.last().containsVariable(name)) {
+            scopeContexts.last().setVariable(name, value)
+        } else {
+            throw UndefinedVariableException()
+        }
     }
 
     fun getVariable(name: String): Int? {
@@ -50,6 +66,10 @@ class Context {
 
         fun addFunction(name: String, value: FunParser.FunctionContext) {
             functions.put(name, value)
+        }
+
+        fun setVariable(name: String, value: Int?) {
+            variables[name] = value
         }
 
         fun containsVariable(name: String): Boolean {
