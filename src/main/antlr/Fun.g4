@@ -24,7 +24,7 @@ parameterNames : IDENTIFIER (',' IDENTIFIER)*;
 
 whileStatement : 'while' '(' expression ')' blockWithBraces;
 
-ifStatement : 'if' '(' expression ')' blockWithBraces;
+ifStatement : 'if' '(' expression ')' blockWithBraces ('else' blockWithBraces)?;
 
 assignment : IDENTIFIER '=' expression;
 
