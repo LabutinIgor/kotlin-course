@@ -1,5 +1,6 @@
 package ru.spbau.mit
 
+import org.antlr.v4.runtime.tree.ErrorNode
 import ru.spbau.mit.parser.FunBaseVisitor
 import ru.spbau.mit.parser.FunParser
 
@@ -27,7 +28,11 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     }
 
     override fun visitFunction(ctx: FunParser.FunctionContext): Int? {
-        context.addFunction(ctx.IDENTIFIER().text, ctx)
+        try {
+            context.addFunction(ctx.IDENTIFIER().text, ctx)
+        } catch (e: RedefineFunctionException) {
+            throw RedefineFunctionException("Function redefined", ctx.start.line)
+        }
         return null
     }
 
@@ -38,7 +43,11 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         } else {
             null
         }
-        context.addVariable(name = name.text, value = value)
+        try {
+            context.addVariable(name = name.text, value = value)
+        } catch (e: RedefineVariableException) {
+            throw RedefineVariableException("Variable redefined", ctx.start.line)
+        }
         return null
     }
 
@@ -64,7 +73,11 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     }
 
     override fun visitAssignment(ctx: FunParser.AssignmentContext): Int? {
-        context.setVariable(ctx.IDENTIFIER().text, visit(ctx.expression()))
+        try {
+            context.setVariable(ctx.IDENTIFIER().text, visit(ctx.expression()))
+        } catch (e: UndefinedVariableException) {
+            throw UndefinedVariableException("Undefined variable", ctx.start.line)
+        }
         return null
     }
 
@@ -105,7 +118,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
                 leftRes + rightRes
             "%" ->
                 if (rightRes == 0) {
-                    throw DivisionByZeroException()
+                    throw DivisionByZeroException("Division by zero")
                 } else {
                     leftRes % rightRes
                 }
@@ -184,12 +197,16 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         return when {
             ctx.functionCall() != null -> visit(ctx.functionCall())
             ctx.IDENTIFIER() != null ->
-                context.getVariable(ctx.IDENTIFIER().text)
+                try {
+                    context.getVariable(ctx.IDENTIFIER().text)
+                } catch (e: UndefinedVariableException) {
+                    throw UndefinedVariableException("Undefined variable", ctx.start.line)
+                }
             ctx.LITERAL() != null -> {
                 try {
                     ctx.LITERAL().text.toInt()
                 } catch (e: NumberFormatException) {
-                    throw NumberOverflowException("Number overflow")
+                    throw NumberOverflowException("Number overflow", ctx.start.line)
                 }
             }
             ctx.expression() != null -> visit(ctx.expression())
@@ -201,7 +218,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         val names: MutableList<String> = mutableListOf()
         function.parameterNames().IDENTIFIER().mapTo(names) { it.text }
         if (names.size != args.size) {
-            throw IncorrectNumberOfArgsException()
+            throw IncorrectNumberOfArgsException("Incorrect number of arguments")
         }
 
         context.enterScope()
@@ -221,8 +238,12 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
             out.println(args.joinToString(" "))
             null
         } else {
-            val function = context.getFunction(name)
-            evaluateFunction(function, args)
+            try {
+                val function = context.getFunction(name)
+                evaluateFunction(function, args)
+            } catch (e: UndefinedFunctionException) {
+                throw UndefinedFunctionException("Undefined function", ctx.start.line)
+            }
         }
     }
 }
