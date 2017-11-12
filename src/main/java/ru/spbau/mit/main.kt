@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import ru.spbau.mit.parser.FunLexer
 import ru.spbau.mit.parser.FunParser
+import org.antlr.v4.runtime.misc.ParseCancellationException
 
 
 fun main(args: Array<String>) {
@@ -17,12 +18,22 @@ fun main(args: Array<String>) {
     try {
         val charStream: CharStream = CharStreams.fromFileName(args[0])
         val lexer = FunLexer(charStream)
+        lexer.removeErrorListeners()
+        lexer.addErrorListener(ThrowingErrorListener.INSTANCE)
+
         val tokens = CommonTokenStream(lexer)
+
         val parser = FunParser(tokens)
+        parser.removeErrorListeners()
+        parser.addErrorListener(ThrowingErrorListener.INSTANCE)
+
         val funInterpreter = FunInterpreter()
         funInterpreter.visitFile(parser.file())
     } catch (e: java.nio.file.NoSuchFileException) {
         println("File not found")
+        System.exit(1)
+    } catch (e: ParseCancellationException) {
+        println("Syntax error: " + e.message)
         System.exit(1)
     } catch (e: FunException) {
         if (e.line != null) {
@@ -32,7 +43,7 @@ fun main(args: Array<String>) {
         }
         System.exit(1)
     } catch (e: Exception) {
-        println("Something went wrong")
+        println("Something went wrong " + e.message)
         System.exit(1)
     }
 }
