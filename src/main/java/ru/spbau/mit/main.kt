@@ -3,10 +3,8 @@ package ru.spbau.mit
 import org.antlr.v4.runtime.CharStream
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
-import org.antlr.v4.runtime.misc.ParseCancellationException
 import ru.spbau.mit.parser.FunLexer
 import ru.spbau.mit.parser.FunParser
-import javax.xml.transform.ErrorListener
 
 
 fun main(args: Array<String>) {
