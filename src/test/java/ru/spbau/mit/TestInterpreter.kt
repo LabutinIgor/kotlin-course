@@ -60,6 +60,7 @@ class TestInterpreter {
         val lexer = FunLexer(charStream)
         val tokens = CommonTokenStream(lexer)
         val parser = FunParser(tokens)
+
         val pipedOutputStream = PipedOutputStream()
         val out: java.io.PrintStream = PrintStream(pipedOutputStream)
         val pipedInputStream = PipedInputStream(pipedOutputStream)
@@ -85,5 +86,35 @@ class TestInterpreter {
         assertEquals(5, inputScanner.nextInt())
         assertEquals(8, inputScanner.nextInt())
         assertFalse(inputScanner.hasNext())
+    }
+
+    @Test(expected = NumberOverflowException::class)
+    fun testProgramWithIncorrectNumber() {
+        val charStream: CharStream = CharStreams.fromString("var a = 10\n" +
+                "var b = 20000000000 //Overflow\n" +
+                "if (a > b) {\n" +
+                "    println(1)\n" +
+                "} else {\n" +
+                "    println(0)\n" +
+                "}")
+
+        val lexer = FunLexer(charStream)
+        val tokens = CommonTokenStream(lexer)
+        val parser = FunParser(tokens)
+        val funInterpreter = FunInterpreter()
+        funInterpreter.visitFile(parser.file())
+    }
+
+    @Test(expected = RedefineVariableException::class)
+    fun testProgramWithRedefinedVariable() {
+        val charStream: CharStream = CharStreams.fromString("var a = 10\n" +
+                "var a = 200 //Redefined\n" +
+                "println(a)\n")
+
+        val lexer = FunLexer(charStream)
+        val tokens = CommonTokenStream(lexer)
+        val parser = FunParser(tokens)
+        val funInterpreter = FunInterpreter()
+        funInterpreter.visitFile(parser.file())
     }
 }
