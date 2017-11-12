@@ -1,6 +1,5 @@
 package ru.spbau.mit
 
-import org.antlr.v4.runtime.tree.ErrorNode
 import ru.spbau.mit.parser.FunBaseVisitor
 import ru.spbau.mit.parser.FunParser
 
