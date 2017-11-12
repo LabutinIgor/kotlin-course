@@ -43,7 +43,7 @@ fun main(args: Array<String>) {
         }
         System.exit(1)
     } catch (e: Exception) {
-        println("Something went wrong " + e.message)
+        println("Something went wrong: " + e.message)
         System.exit(1)
     }
 }
