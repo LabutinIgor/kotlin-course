@@ -8,7 +8,6 @@ import org.junit.Test
 import ru.spbau.mit.parser.FunLexer
 import ru.spbau.mit.parser.FunParser
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 
 class TestParsing {
     @Test
