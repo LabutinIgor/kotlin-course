@@ -99,8 +99,13 @@ class TestInterpreter {
                 "}")
 
         val lexer = FunLexer(charStream)
+        lexer.removeErrorListeners()
+        lexer.addErrorListener(ThrowingErrorListener.INSTANCE)
         val tokens = CommonTokenStream(lexer)
         val parser = FunParser(tokens)
+        parser.removeErrorListeners()
+        parser.addErrorListener(ThrowingErrorListener.INSTANCE)
+
         val funInterpreter = FunInterpreter()
         funInterpreter.visitFile(parser.file())
     }
@@ -112,8 +117,13 @@ class TestInterpreter {
                 "println(a)\n")
 
         val lexer = FunLexer(charStream)
+        lexer.removeErrorListeners()
+        lexer.addErrorListener(ThrowingErrorListener.INSTANCE)
         val tokens = CommonTokenStream(lexer)
         val parser = FunParser(tokens)
+        parser.removeErrorListeners()
+        parser.addErrorListener(ThrowingErrorListener.INSTANCE)
+
         val funInterpreter = FunInterpreter()
         funInterpreter.visitFile(parser.file())
     }
