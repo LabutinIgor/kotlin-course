@@ -58,7 +58,7 @@ abstract class Command(val name: String, private val simpleAttributes: List<Stri
 
     fun renderChildren(builder: StringBuilder, indent: String) {
         for (c in children) {
-            c.render(builder, indent + "  ")
+            c.render(builder, indent)
         }
     }
 
@@ -97,7 +97,7 @@ abstract class MultiLineCommand(name: String, simpleAttributes: List<String> = l
         Command(name, simpleAttributes, attributesWithValue) {
     override fun render(builder: StringBuilder, indent: String) {
         builder.append("$indent\\begin{$name}${renderAttributes()}\n")
-        renderChildren(builder, indent)
+        renderChildren(builder, indent + "  ")
         builder.append("$indent\\end{$name}\n")
     }
 }
@@ -111,7 +111,7 @@ abstract class OneLineCommand(name: String, private val value: String, simpleAtt
             builder.append("{$value}")
         }
         builder.append("\n")
-        renderChildren(builder, indent)
+        renderChildren(builder, indent + "  ")
     }
 }
 
