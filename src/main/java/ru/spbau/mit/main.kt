@@ -50,23 +50,21 @@ fun writeAnswer(ids: Pair<Int, Int>) {
 
 fun solve(data: List<VectorWithId>): Pair<Int, Int> {
     val sortedPoints = data.sorted()
+    val vectors: MutableList<Vector> = mutableListOf()
+    for (i in 0 until sortedPoints.size) {
+        val p1 = sortedPoints[i].vector
+        val p2 = sortedPoints[(i + 1) % sortedPoints.size].vector
+        vectors.add(Vector(p1.dot(p2), Math.abs(p1.cross(p2))))
+    }
+
     var resId = 0
     for (i in 0 until sortedPoints.size) {
-        if (angleLess(sortedPoints[i].vector, sortedPoints[(i + 1) % sortedPoints.size].vector,
-                sortedPoints[resId].vector, sortedPoints[(resId + 1) % sortedPoints.size].vector)) {
+        if (vectors[i].cross(vectors[resId]) > 0) {
             resId = i
         }
     }
     return Pair(sortedPoints[resId].id, sortedPoints[(resId + 1) % sortedPoints.size].id)
 }
-
-private fun angleLess(firstAngle1: Vector, firstAngle2: Vector,
-                      secondAngle1: Vector, secondAngle2: Vector): Boolean {
-    val p1 = Vector(firstAngle1.dot(firstAngle2), Math.abs(firstAngle1.cross(firstAngle2)))
-    val p2 = Vector(secondAngle1.dot(secondAngle2), Math.abs(secondAngle1.cross(secondAngle2)))
-    return p1.cross(p2) > 0
-}
-
 
 fun main(args: Array<String>) {
     val data = readData()
