@@ -29,7 +29,7 @@ data class VectorWithId(val vector: Vector, val id: Int) : Comparable<VectorWith
     override fun compareTo(other: VectorWithId): Int = vector.compareTo(other.vector)
 }
 
-fun readData(): ArrayList<VectorWithId> {
+fun readData(): List<VectorWithId> {
     val data = ArrayList<VectorWithId>()
     val scanner = Scanner(System.`in`)
     val n = scanner.nextInt()
@@ -48,7 +48,7 @@ fun writeAnswer(ids: Pair<Int, Int>) {
     printWriter.close()
 }
 
-fun solve(data: ArrayList<VectorWithId>): Pair<Int, Int> {
+fun solve(data: List<VectorWithId>): Pair<Int, Int> {
     val sortedPoints = data.sorted()
     var resId = 0
     for (i in 0 until sortedPoints.size) {
