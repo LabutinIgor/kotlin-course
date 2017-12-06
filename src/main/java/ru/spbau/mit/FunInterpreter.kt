@@ -32,8 +32,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         try {
             context.addFunction(ctx.IDENTIFIER().text, ctx)
         } catch (e: FunException) {
-            e.line = ctx.start.line
-            throw e
+            throw FunException(e.message, ctx.start.line)
         }
         return null
     }
@@ -48,8 +47,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         try {
             context.addVariable(name = name.text, value = value)
         } catch (e: FunException) {
-            e.line = ctx.start.line
-            throw e
+            throw FunException(e.message, ctx.start.line)
         }
         return null
     }
@@ -79,8 +77,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         try {
             context.setVariable(ctx.IDENTIFIER().text, visit(ctx.expression()))
         } catch (e: FunException) {
-            e.line = ctx.start.line
-            throw e
+            throw FunException(e.message, ctx.start.line)
         }
         return null
     }
@@ -197,27 +194,23 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         }
     }
 
-    override fun visitAtomicExpression(ctx: FunParser.AtomicExpressionContext): Int? {
-        return when {
-            ctx.functionCall() != null -> visit(ctx.functionCall())
-            ctx.IDENTIFIER() != null ->
-                try {
-                    context.getVariable(ctx.IDENTIFIER().text)
-                } catch (e: FunException) {
-                    e.line = ctx.start.line
-                    throw e
-                }
-            ctx.LITERAL() != null -> {
-                try {
-                    ctx.LITERAL().text.toInt()
-                } catch (e: FunException) {
-                    e.line = ctx.start.line
-                    throw e
-                }
+    override fun visitAtomicExpression(ctx: FunParser.AtomicExpressionContext): Int? = when {
+        ctx.functionCall() != null -> visit(ctx.functionCall())
+        ctx.IDENTIFIER() != null ->
+            try {
+                context.getVariable(ctx.IDENTIFIER().text)
+            } catch (e: FunException) {
+                throw FunException(e.message, ctx.start.line)
             }
-            ctx.expression() != null -> visit(ctx.expression())
-            else -> null
+        ctx.LITERAL() != null -> {
+            try {
+                ctx.LITERAL().text.toInt()
+            } catch (e: FunException) {
+                throw FunException(e.message, ctx.start.line)
+            }
         }
+        ctx.expression() != null -> visit(ctx.expression())
+        else -> null
     }
 
     private fun evaluateFunction(function: FunParser.FunctionContext, args: MutableList<Int?>, line: Int): Int? {
@@ -248,8 +241,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
                 val function = context.getFunction(name)
                 evaluateFunction(function, args, ctx.start.line)
             } catch (e: FunException) {
-                e.line = ctx.start.line
-                throw e
+                throw FunException(e.message, ctx.start.line)
             }
         }
     }
