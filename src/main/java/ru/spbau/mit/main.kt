@@ -16,7 +16,7 @@ fun main(args: Array<String>) {
     }
 
     val charStream: CharStream? = try {
-         CharStreams.fromFileName(args[0])
+        CharStreams.fromFileName(args[0])
     } catch (e: java.nio.file.NoSuchFileException) {
         println("File not found")
         System.exit(1)
@@ -31,7 +31,6 @@ fun main(args: Array<String>) {
     val parser = FunParser(tokens)
     parser.removeErrorListeners()
     parser.addErrorListener(ThrowingErrorListener)
-    
 
     try {
         val funInterpreter = FunInterpreter()
