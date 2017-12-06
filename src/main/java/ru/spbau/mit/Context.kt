@@ -14,19 +14,11 @@ class Context {
     }
 
     fun addVariable(name: String, value: Int? = null) {
-        if (scopeContexts.last().containsVariable(name)) {
-            throw RedefineVariableException("Redefine variable")
-        } else {
-            scopeContexts.last().addVariable(name, value)
-        }
+        scopeContexts.last().addVariable(name, value)
     }
 
     fun addFunction(name: String, value: FunParser.FunctionContext) {
-        if (scopeContexts.last().containsFunction(name)) {
-            throw RedefineFunctionException("Redefine function")
-        } else {
-            scopeContexts.last().addFunction(name, value)
-        }
+        scopeContexts.last().addFunction(name, value)
     }
 
     fun setVariable(name: String, value: Int?) {
@@ -62,10 +54,16 @@ class Context {
         private var functions: MutableMap<String, FunParser.FunctionContext> = mutableMapOf()
 
         fun addVariable(name: String, value: Int?) {
+            if (containsVariable(name)) {
+                throw RedefineVariableException("Redefine variable")
+            }
             variables.put(name, value)
         }
 
         fun addFunction(name: String, value: FunParser.FunctionContext) {
+            if (containsFunction(name)) {
+                throw RedefineFunctionException("Redefine function")
+            }
             functions.put(name, value)
         }
 
