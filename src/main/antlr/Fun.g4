@@ -31,32 +31,7 @@ assignment : IDENTIFIER '=' expression;
 returnStatement : 'return' expression;
 
 expression
-    : expressionPriority5 BIN_OP_PRIORITY6 expression
-    | expressionPriority5
-    ;
-
-expressionPriority5
-    : expressionPriority4 BIN_OP_PRIORITY5 expressionPriority5
-    | expressionPriority4
-    ;
-
-expressionPriority4
-    : expressionPriority3 BIN_OP_PRIORITY4 expressionPriority4
-    | expressionPriority3
-    ;
-
-expressionPriority3
-    : expressionPriority2 BIN_OP_PRIORITY3 expressionPriority3
-    | expressionPriority2
-    ;
-
-expressionPriority2
-    : expressionPriority1 BIN_OP_PRIORITY2 expressionPriority2
-    | expressionPriority1
-    ;
-
-expressionPriority1
-    : atomicExpression BIN_OP_PRIORITY1 expressionPriority1
+    : expression BIN_OP expression
     | atomicExpression
     ;
 
@@ -71,6 +46,14 @@ functionCall : IDENTIFIER '(' arguments ')';
 
 arguments : expression (',' expression)*;
 
+BIN_OP
+    : BIN_OP_PRIORITY6
+    | BIN_OP_PRIORITY5
+    | BIN_OP_PRIORITY4
+    | BIN_OP_PRIORITY3
+    | BIN_OP_PRIORITY2
+    | BIN_OP_PRIORITY1
+    ;
 
 BIN_OP_PRIORITY1
     : MUL

@@ -135,62 +135,12 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     }
 
     override fun visitExpression(ctx: FunParser.ExpressionContext): Int? {
-        val leftRes = visit(ctx.expressionPriority5())
-        return if (ctx.childCount == 1) {
-            leftRes
+        return if (ctx.atomicExpression() != null) {
+            visit(ctx.atomicExpression())
         } else {
-            val rightRes = visit(ctx.expression())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY6().text, ctx.start.line)
-        }
-    }
-
-    override fun visitExpressionPriority5(ctx: FunParser.ExpressionPriority5Context): Int? {
-        val leftRes = visit(ctx.expressionPriority4())
-        return if (ctx.childCount == 1) {
-            leftRes
-        } else {
-            val rightRes = visit(ctx.expressionPriority5())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY5().text, ctx.start.line)
-        }
-    }
-
-    override fun visitExpressionPriority4(ctx: FunParser.ExpressionPriority4Context): Int? {
-        val leftRes = visit(ctx.expressionPriority3())
-        return if (ctx.childCount == 1) {
-            leftRes
-        } else {
-            val rightRes = visit(ctx.expressionPriority4())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY4().text, ctx.start.line)
-        }
-    }
-
-    override fun visitExpressionPriority3(ctx: FunParser.ExpressionPriority3Context): Int? {
-        val leftRes = visit(ctx.expressionPriority2())
-        return if (ctx.childCount == 1) {
-            leftRes
-        } else {
-            val rightRes = visit(ctx.expressionPriority3())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY3().text, ctx.start.line)
-        }
-    }
-
-    override fun visitExpressionPriority2(ctx: FunParser.ExpressionPriority2Context): Int? {
-        val leftRes = visit(ctx.expressionPriority1())
-        return if (ctx.childCount == 1) {
-            leftRes
-        } else {
-            val rightRes = visit(ctx.expressionPriority2())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY2().text, ctx.start.line)
-        }
-    }
-
-    override fun visitExpressionPriority1(ctx: FunParser.ExpressionPriority1Context): Int? {
-        val leftRes = visit(ctx.atomicExpression())
-        return if (ctx.childCount == 1) {
-            leftRes
-        } else {
-            val rightRes = visit(ctx.expressionPriority1())
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP_PRIORITY1().text, ctx.start.line)
+            val leftRes = visit(ctx.expression(0))
+            val rightRes = visit(ctx.expression(1))
+            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP().text, ctx.start.line)
         }
     }
 
