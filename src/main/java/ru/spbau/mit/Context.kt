@@ -30,9 +30,9 @@ class Context {
     }
 
     fun setVariable(name: String, value: Int?) {
-        for (i in scopeContexts.size - 1 downTo 0) {
-            if (scopeContexts[i].containsVariable(name)) {
-                scopeContexts[i].setVariable(name, value)
+        for (context in scopeContexts.asReversed()) {
+            if (context.containsVariable(name)) {
+                context.setVariable(name, value)
                 return
             }
         }
@@ -40,25 +40,21 @@ class Context {
     }
 
     fun getVariable(name: String): Int {
-        (scopeContexts.size - 1 downTo 0)
-                .asSequence()
-                .filter { scopeContexts[it].containsVariable(name) }
-                .forEach {
-                    return scopeContexts[it].getVariable(name) ?:
-                            throw UninitializedVariableException("Uninitialized variable")
-                }
+        for (context in scopeContexts.asReversed()) {
+            if (context.containsVariable(name)) {
+                return context.getVariable(name) ?: throw UninitializedVariableException("Uninitialized variable")
+            }
+        }
         throw UndefinedVariableException("Undefined variable")
     }
 
     fun getFunction(name: String): FunParser.FunctionContext {
-        val f = (scopeContexts.size - 1 downTo 0)
-                .firstOrNull { scopeContexts[it].containsFunction(name) }
-                ?.let { scopeContexts[it].getFunction(name) }
-        if (f == null) {
-            throw UndefinedFunctionException("Undefined function")
-        } else {
-            return f
+        for (context in scopeContexts.asReversed()) {
+            if (context.containsFunction(name)) {
+                return context.getFunction(name)
+            }
         }
+        throw UndefinedFunctionException("Undefined function")
     }
 
     class ScopeContext {
