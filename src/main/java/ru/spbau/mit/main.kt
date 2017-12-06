@@ -15,23 +15,27 @@ fun main(args: Array<String>) {
         System.exit(1)
     }
 
-    try {
-        val charStream: CharStream = CharStreams.fromFileName(args[0])
-        val lexer = FunLexer(charStream)
-        lexer.removeErrorListeners()
-        lexer.addErrorListener(ThrowingErrorListener)
-
-        val tokens = CommonTokenStream(lexer)
-
-        val parser = FunParser(tokens)
-        parser.removeErrorListeners()
-        parser.addErrorListener(ThrowingErrorListener)
-
-        val funInterpreter = FunInterpreter()
-        funInterpreter.visitFile(parser.file())
+    val charStream: CharStream? = try {
+         CharStreams.fromFileName(args[0])
     } catch (e: java.nio.file.NoSuchFileException) {
         println("File not found")
         System.exit(1)
+        null
+    }
+
+    val lexer = FunLexer(charStream)
+    lexer.removeErrorListeners()
+    lexer.addErrorListener(ThrowingErrorListener)
+
+    val tokens = CommonTokenStream(lexer)
+    val parser = FunParser(tokens)
+    parser.removeErrorListeners()
+    parser.addErrorListener(ThrowingErrorListener)
+    
+
+    try {
+        val funInterpreter = FunInterpreter()
+        funInterpreter.visitFile(parser.file())
     } catch (e: ParseCancellationException) {
         println("Syntax error: " + e.message)
         System.exit(1)
