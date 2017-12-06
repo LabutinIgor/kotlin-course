@@ -22,13 +22,13 @@ class TestParsing {
 
         val lexer = FunLexer(charStream)
         lexer.removeErrorListeners()
-        lexer.addErrorListener(ThrowingErrorListener.INSTANCE)
+        lexer.addErrorListener(ThrowingErrorListener)
 
         val tokens = CommonTokenStream(lexer)
 
         val parser = FunParser(tokens)
         parser.removeErrorListeners()
-        parser.addErrorListener(ThrowingErrorListener.INSTANCE)
+        parser.addErrorListener(ThrowingErrorListener)
 
         val fileContext = parser.file()!!
         assertEquals(3, fileContext.block().statement().size)
@@ -46,13 +46,13 @@ class TestParsing {
 
         val lexer = FunLexer(charStream)
         lexer.removeErrorListeners()
-        lexer.addErrorListener(ThrowingErrorListener.INSTANCE)
+        lexer.addErrorListener(ThrowingErrorListener)
 
         val tokens = CommonTokenStream(lexer)
 
         val parser = FunParser(tokens)
         parser.removeErrorListeners()
-        parser.addErrorListener(ThrowingErrorListener.INSTANCE)
+        parser.addErrorListener(ThrowingErrorListener)
         parser.file()!!
     }
 }

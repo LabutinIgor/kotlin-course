@@ -155,8 +155,8 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         ctx.LITERAL() != null -> {
             try {
                 ctx.LITERAL().text.toInt()
-            } catch (e: FunException) {
-                throw FunException(e.message, ctx.start.line)
+            } catch (e: NumberFormatException) {
+                throw FunException("Numeric overflow", ctx.start.line)
             }
         }
         ctx.expression() != null -> visit(ctx.expression())

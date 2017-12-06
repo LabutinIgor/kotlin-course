@@ -88,7 +88,7 @@ class TestInterpreter {
         assertFalse(inputScanner.hasNext())
     }
 
-    @Test(expected = NumberOverflowException::class)
+    @Test(expected = FunException::class)
     fun testProgramWithIncorrectNumber() {
         val charStream: CharStream = CharStreams.fromString("var a = 10\n" +
                 "var b = 20000000000 //Overflow\n" +
@@ -100,17 +100,17 @@ class TestInterpreter {
 
         val lexer = FunLexer(charStream)
         lexer.removeErrorListeners()
-        lexer.addErrorListener(ThrowingErrorListener.INSTANCE)
+        lexer.addErrorListener(ThrowingErrorListener)
         val tokens = CommonTokenStream(lexer)
         val parser = FunParser(tokens)
         parser.removeErrorListeners()
-        parser.addErrorListener(ThrowingErrorListener.INSTANCE)
+        parser.addErrorListener(ThrowingErrorListener)
 
         val funInterpreter = FunInterpreter()
         funInterpreter.visitFile(parser.file())
     }
 
-    @Test(expected = RedefineVariableException::class)
+    @Test(expected = FunException::class)
     fun testProgramWithRedefinedVariable() {
         val charStream: CharStream = CharStreams.fromString("var a = 10\n" +
                 "var a = 200 //Redefined\n" +
@@ -118,11 +118,11 @@ class TestInterpreter {
 
         val lexer = FunLexer(charStream)
         lexer.removeErrorListeners()
-        lexer.addErrorListener(ThrowingErrorListener.INSTANCE)
+        lexer.addErrorListener(ThrowingErrorListener)
         val tokens = CommonTokenStream(lexer)
         val parser = FunParser(tokens)
         parser.removeErrorListeners()
-        parser.addErrorListener(ThrowingErrorListener.INSTANCE)
+        parser.addErrorListener(ThrowingErrorListener)
 
         val funInterpreter = FunInterpreter()
         funInterpreter.visitFile(parser.file())
