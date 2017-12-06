@@ -3,7 +3,7 @@ package ru.spbau.mit
 import ru.spbau.mit.parser.FunParser
 
 class Context {
-    private var scopeContexts: MutableList<ScopeContext> = arrayListOf(ScopeContext())
+    private val scopeContexts: MutableList<ScopeContext> = arrayListOf(ScopeContext())
 
     fun enterScope() {
         scopeContexts.add(ScopeContext())
@@ -50,8 +50,8 @@ class Context {
     }
 
     class ScopeContext {
-        private var variables: MutableMap<String, Int?> = mutableMapOf()
-        private var functions: MutableMap<String, FunParser.FunctionContext> = mutableMapOf()
+        private val variables: MutableMap<String, Int?> = mutableMapOf()
+        private val functions: MutableMap<String, FunParser.FunctionContext> = mutableMapOf()
 
         fun addVariable(name: String, value: Int?) {
             if (containsVariable(name)) {
