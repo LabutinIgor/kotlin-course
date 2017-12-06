@@ -163,7 +163,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         else -> null
     }
 
-    private fun evaluateFunction(function: FunParser.FunctionContext, args: MutableList<Int?>, line: Int): Int? {
+    private fun evaluateFunction(function: FunParser.FunctionContext, args: List<Int?>, line: Int): Int? {
         val names = function.parameterNames().IDENTIFIER().map { it.text }.toList()
         if (names.size != args.size) {
             throw IncorrectNumberOfArgsException("Incorrect number of arguments", line)
@@ -180,8 +180,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
 
     override fun visitFunctionCall(ctx: FunParser.FunctionCallContext): Int? {
         val name = ctx.IDENTIFIER().text
-        val args: MutableList<Int?> = mutableListOf()
-        ctx.arguments().expression().mapTo(args) { visit(it) }
+        val args = ctx.arguments().expression().map { visit(it) }
         return if (name == "println") {
             out.println(args.joinToString(" "))
             0
