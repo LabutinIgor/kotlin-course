@@ -19,13 +19,13 @@ fun main(args: Array<String>) {
         val charStream: CharStream = CharStreams.fromFileName(args[0])
         val lexer = FunLexer(charStream)
         lexer.removeErrorListeners()
-        lexer.addErrorListener(ThrowingErrorListener.INSTANCE)
+        lexer.addErrorListener(ThrowingErrorListener)
 
         val tokens = CommonTokenStream(lexer)
 
         val parser = FunParser(tokens)
         parser.removeErrorListeners()
-        parser.addErrorListener(ThrowingErrorListener.INSTANCE)
+        parser.addErrorListener(ThrowingErrorListener)
 
         val funInterpreter = FunInterpreter()
         funInterpreter.visitFile(parser.file())
