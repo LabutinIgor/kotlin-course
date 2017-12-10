@@ -28,11 +28,10 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     override fun visitBlockWithBraces(ctx: FunParser.BlockWithBracesContext): Int? = visit(ctx.block())
 
     override fun visitFunction(ctx: FunParser.FunctionContext): Int? {
-        try {
-            context.addFunction(ctx.IDENTIFIER().text, ctx)
-        } catch (e: FunException) {
-            throw FunException(e.message, ctx.start.line)
+        if (context.isFunctionDefined(ctx.IDENTIFIER().text)) {
+            throw RedefineFunctionException("Function redefined", ctx.start.line)
         }
+        context.addFunction(ctx.IDENTIFIER().text, ctx)
         return null
     }
 
@@ -43,11 +42,10 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         } else {
             null
         }
-        try {
-            context.addVariable(name = name.text, value = value)
-        } catch (e: FunException) {
-            throw FunException(e.message, ctx.start.line)
+        if (context.isVariableDefined(name.text)) {
+            throw RedefineVariableException("Variable redefined", ctx.start.line)
         }
+        context.addVariable(name = name.text, value = value)
         return null
     }
 
@@ -73,11 +71,10 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     }
 
     override fun visitAssignment(ctx: FunParser.AssignmentContext): Int? {
-        try {
-            context.setVariable(ctx.IDENTIFIER().text, visit(ctx.expression()))
-        } catch (e: FunException) {
-            throw FunException(e.message, ctx.start.line)
+        if (!context.isVariableDefined(ctx.IDENTIFIER().text)) {
+            throw UndefinedVariableException("Undefined variable", ctx.start.line)
         }
+        context.setVariable(ctx.IDENTIFIER().text, visit(ctx.expression())!!)
         return null
     }
 
@@ -159,10 +156,15 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     override fun visitExprUnaryPlus(ctx: FunParser.ExprUnaryPlusContext): Int = -visit(ctx.expression())!!
 
     override fun visitIdentifierExpression(ctx: FunParser.IdentifierExpressionContext): Int {
-        try {
-            return context.getVariable(ctx.IDENTIFIER().text)
-        } catch (e: FunException) {
-            throw FunException(e.message, ctx.start.line)
+        if (context.isVariableDefined(ctx.IDENTIFIER().text)) {
+            val res = context.getVariable(ctx.IDENTIFIER().text)
+            if (res == null) {
+                throw UninitializedVariableException("Uninitialized variable", ctx.start.line)
+            } else {
+                return res
+            }
+        } else {
+            throw UndefinedVariableException("Undefined variable", ctx.start.line)
         }
     }
 
@@ -174,8 +176,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         }
     }
 
-    override fun visitBracketedExpression(ctx: FunParser.BracketedExpressionContext): Int =
-            visit(ctx.expression())!!
+    override fun visitBracketedExpression(ctx: FunParser.BracketedExpressionContext): Int = visit(ctx.expression())!!
 
     private fun evaluateFunction(function: FunParser.FunctionContext, args: List<Int?>, line: Int): Int {
         val names = function.parameterNames().IDENTIFIER().map { it.text }.toList()
@@ -199,11 +200,10 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
             out.println(args.joinToString(" "))
             0
         } else {
-            try {
-                val function = context.getFunction(name)
-                evaluateFunction(function, args, ctx.start.line)
-            } catch (e: FunException) {
-                throw FunException(e.message, ctx.start.line)
+            if (context.isFunctionDefined(name)) {
+                evaluateFunction(context.getFunction(name)!!, args, ctx.start.line)
+            } else {
+                throw UndefinedFunctionException("Undefined function", ctx.start.line)
             }
         }
     }
