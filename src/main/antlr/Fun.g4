@@ -9,7 +9,7 @@ blockWithBraces : '{' block '}';
 statement
     : function
     | variable
-    | expression
+    | expressionStatement
     | whileStatement
     | ifStatement
     | assignment
@@ -19,6 +19,8 @@ statement
 function : 'fun' IDENTIFIER '(' parameterNames ')' blockWithBraces;
 
 variable : 'var' IDENTIFIER ('=' expression)?;
+
+expressionStatement : expression;
 
 parameterNames : IDENTIFIER (',' IDENTIFIER)*;
 
