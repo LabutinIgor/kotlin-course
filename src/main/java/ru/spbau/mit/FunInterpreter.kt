@@ -63,7 +63,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
 
     override fun visitIfStatement(ctx: FunParser.IfStatementContext): Int? {
         if (visit(ctx.expression()) != 0) {
-             return visit(ctx.blockWithBraces(0))
+            return visit(ctx.blockWithBraces(0))
         } else {
             if (ctx.blockWithBraces().size == 2) {
                 return visit(ctx.blockWithBraces(1))
@@ -83,27 +83,19 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
 
     override fun visitReturnStatement(ctx: FunParser.ReturnStatementContext): Int? = visit(ctx.expression())
 
-    private fun applyBinaryOperation(leftRes: Int, rightRes: Int, operation: String, line: Int): Int {
-        return when (operation) {
-            "||" -> if (leftRes != 0 || rightRes != 0) 1 else 0
-            "&&" -> if (leftRes != 0 && rightRes != 0) 1 else 0
-            "!=" -> if (leftRes != rightRes) 1 else 0
-            "==" -> if (leftRes == rightRes) 1 else 0
-            ">=" -> if (leftRes >= rightRes) 1 else 0
-            "<=" -> if (leftRes <= rightRes) 1 else 0
-            ">" -> if (leftRes > rightRes) 1 else 0
-            "<" -> if (leftRes < rightRes) 1 else 0
-            "-" -> leftRes - rightRes
-            "+" -> leftRes + rightRes
+    override fun visitExprPriority1(ctx: FunParser.ExprPriority1Context): Int {
+        val leftRes = visit(ctx.expression(0))!!
+        val rightRes = visit(ctx.expression(1))!!
+        return when (ctx.op.text) {
             "%" ->
                 if (rightRes == 0) {
-                    throw DivisionByZeroException("Division by zero", line)
+                    throw DivisionByZeroException("Division by zero", ctx.start.line)
                 } else {
                     leftRes % rightRes
                 }
             "/" ->
                 if (rightRes == 0) {
-                    throw DivisionByZeroException("Division by zero", line)
+                    throw DivisionByZeroException("Division by zero", ctx.start.line)
                 } else {
                     leftRes / rightRes
                 }
@@ -112,34 +104,78 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         }
     }
 
-    override fun visitExpression(ctx: FunParser.ExpressionContext): Int {
-        return if (ctx.atomicExpression() != null) {
-            visitAtomicExpression(ctx.atomicExpression())
-        } else {
-            val leftRes = visitExpression(ctx.expression(0))
-            val rightRes = visitExpression(ctx.expression(1))
-            applyBinaryOperation(leftRes, rightRes, ctx.BIN_OP().text, ctx.start.line)
+    override fun visitExprPriority2(ctx: FunParser.ExprPriority2Context): Int {
+        val leftRes = visit(ctx.expression(0))!!
+        val rightRes = visit(ctx.expression(1))!!
+        return when (ctx.op.text) {
+            "-" -> leftRes - rightRes
+            "+" -> leftRes + rightRes
+            else -> 0
         }
     }
 
-    override fun visitAtomicExpression(ctx: FunParser.AtomicExpressionContext): Int = when {
-        ctx.functionCall() != null -> visitFunctionCall(ctx.functionCall())
-        ctx.IDENTIFIER() != null ->
-            try {
-                context.getVariable(ctx.IDENTIFIER().text)
-            } catch (e: FunException) {
-                throw FunException(e.message, ctx.start.line)
-            }
-        ctx.LITERAL() != null -> {
-            try {
-                ctx.LITERAL().text.toInt()
-            } catch (e: NumberFormatException) {
-                throw NumberOverflowException("Numeric overflow", ctx.start.line)
-            }
+    override fun visitExprPriority3(ctx: FunParser.ExprPriority3Context): Int {
+        val leftRes = visit(ctx.expression(0))!!
+        val rightRes = visit(ctx.expression(1))!!
+        return when (ctx.op.text) {
+            ">=" -> if (leftRes >= rightRes) 1 else 0
+            "<=" -> if (leftRes <= rightRes) 1 else 0
+            ">" -> if (leftRes > rightRes) 1 else 0
+            "<" -> if (leftRes < rightRes) 1 else 0
+            else -> 0
         }
-        ctx.expression() != null -> visitExpression(ctx.expression())
-        else -> throw FunException("Undefined expression", ctx.start.line)
     }
+
+    override fun visitExprPriority4(ctx: FunParser.ExprPriority4Context): Int {
+        val leftRes = visit(ctx.expression(0))!!
+        val rightRes = visit(ctx.expression(1))!!
+        return when (ctx.op.text) {
+            "!=" -> if (leftRes != rightRes) 1 else 0
+            "==" -> if (leftRes == rightRes) 1 else 0
+            else -> 0
+        }
+    }
+
+    override fun visitExprPriority5(ctx: FunParser.ExprPriority5Context): Int {
+        val leftRes = visit(ctx.expression(0))!!
+        val rightRes = visit(ctx.expression(1))!!
+        return when (ctx.op.text) {
+            "&&" -> if (leftRes != 0 && rightRes != 0) 1 else 0
+            else -> 0
+        }
+    }
+
+    override fun visitExprPriority6(ctx: FunParser.ExprPriority6Context): Int {
+        val leftRes = visit(ctx.expression(0))!!
+        val rightRes = visit(ctx.expression(1))!!
+        return when (ctx.op.text) {
+            "||" -> if (leftRes != 0 || rightRes != 0) 1 else 0
+            else -> 0
+        }
+    }
+
+    override fun visitExprUnaryMinus(ctx: FunParser.ExprUnaryMinusContext): Int = -visit(ctx.expression())!!
+
+    override fun visitExprUnaryPlus(ctx: FunParser.ExprUnaryPlusContext): Int = -visit(ctx.expression())!!
+
+    override fun visitIdentifierExpression(ctx: FunParser.IdentifierExpressionContext): Int {
+        try {
+            return context.getVariable(ctx.IDENTIFIER().text)
+        } catch (e: FunException) {
+            throw FunException(e.message, ctx.start.line)
+        }
+    }
+
+    override fun visitLiteralExpression(ctx: FunParser.LiteralExpressionContext): Int {
+        try {
+            return ctx.LITERAL().text.toInt()
+        } catch (e: NumberFormatException) {
+            throw NumberOverflowException("Numeric overflow", ctx.start.line)
+        }
+    }
+
+    override fun visitBracketedExpression(ctx: FunParser.BracketedExpressionContext): Int =
+            visit(ctx.expression())!!
 
     private fun evaluateFunction(function: FunParser.FunctionContext, args: List<Int?>, line: Int): Int {
         val names = function.parameterNames().IDENTIFIER().map { it.text }.toList()
