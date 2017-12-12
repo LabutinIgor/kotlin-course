@@ -12,13 +12,15 @@ import kotlin.test.assertEquals
 class TestParsing {
     @Test
     fun testParsingSimpleProgram() {
-        val charStream: CharStream = CharStreams.fromString("var a = 10\n" +
-                "var b = 0\n" +
-                "if (a > b) {\n" +
-                "    println(1)\n" +
-                "} else {\n" +
-                "    println(0)\n" +
-                "}")
+        val charStream: CharStream = CharStreams.fromString("""
+            |var a = 10
+            |var b = 0
+            |if (a > b) {
+            |    println(1)
+            |} else {
+            |    println(0)
+            |}
+            """.trimMargin())
 
         val lexer = FunLexer(charStream)
         lexer.removeErrorListeners()
@@ -41,8 +43,10 @@ class TestParsing {
 
     @Test(expected = ParseCancellationException::class)
     fun testParsingProgramWithSyntaxError() {
-        val charStream: CharStream = CharStreams.fromString("var a = 10.\n" +
-                "var b = 0\n")
+        val charStream: CharStream = CharStreams.fromString("""
+            |var a = 10.
+            |var b = 0
+            """.trimMargin())
 
         val lexer = FunLexer(charStream)
         lexer.removeErrorListeners()

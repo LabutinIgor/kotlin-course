@@ -17,13 +17,15 @@ import kotlin.test.assertTrue
 class TestInterpreter {
     @Test
     fun testSimpleProgramWithIf() {
-        val charStream: CharStream = CharStreams.fromString("var a = 10\n" +
-                "var b = 20\n" +
-                "if (a > b) {\n" +
-                "    println(1)\n" +
-                "} else {\n" +
-                "    println(0)\n" +
-                "}")
+        val charStream: CharStream = CharStreams.fromString("""
+            |var a = 10
+            |var b = 20
+            |if (a > b) {
+            |    println(1)
+            |} else {
+            |    println(0)
+            |}
+            """.trimMargin())
 
         val lexer = FunLexer(charStream)
         val tokens = CommonTokenStream(lexer)
@@ -44,18 +46,20 @@ class TestInterpreter {
 
     @Test
     fun testProgramWithFunctionAndWhile() {
-        val charStream: CharStream = CharStreams.fromString("fun fib(n) {\n" +
-                "    if (n <= 1) {\n" +
-                "        return 1\n" +
-                "    }\n" +
-                "    return fib(n - 1) + fib(n - 2)\n" +
-                "}\n" +
-                "\n" +
-                "var i = 1\n" +
-                "while (i <= 5) {\n" +
-                "    println(i, fib(i))\n" +
-                "    i = i + 1\n" +
-                "}")
+        val charStream: CharStream = CharStreams.fromString("""
+            |fun fib(n) {
+            |        if (n <= 1) {
+            |            return 1
+            |        }
+            |        return fib(n - 1) + fib(n - 2)
+            |    }
+            |
+            |    var i = 1
+            |    while (i <= 5) {
+            |        println(i, fib(i))
+            |        i = i + 1
+            |    }
+            """.trimMargin())
 
         val lexer = FunLexer(charStream)
         val tokens = CommonTokenStream(lexer)
@@ -90,13 +94,15 @@ class TestInterpreter {
 
     @Test(expected = FunException::class)
     fun testProgramWithIncorrectNumber() {
-        val charStream: CharStream = CharStreams.fromString("var a = 10\n" +
-                "var b = 20000000000 //Overflow\n" +
-                "if (a > b) {\n" +
-                "    println(1)\n" +
-                "} else {\n" +
-                "    println(0)\n" +
-                "}")
+        val charStream: CharStream = CharStreams.fromString("""
+            |var a = 10
+            |var b = 20000000000 //Overflow
+            |if (a > b) {
+            |    println(1)
+            |} else {
+            |    println(0)
+            |}
+            """.trimMargin())
 
         val lexer = FunLexer(charStream)
         lexer.removeErrorListeners()
@@ -112,9 +118,11 @@ class TestInterpreter {
 
     @Test(expected = FunException::class)
     fun testProgramWithRedefinedVariable() {
-        val charStream: CharStream = CharStreams.fromString("var a = 10\n" +
-                "var a = 200 //Redefined\n" +
-                "println(a)\n")
+        val charStream: CharStream = CharStreams.fromString("""
+            |var a = 10
+            |var a = 200 //Redefined
+            |println(a)
+            """.trimMargin())
 
         val lexer = FunLexer(charStream)
         lexer.removeErrorListeners()
