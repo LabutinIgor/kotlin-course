@@ -22,7 +22,7 @@ variable : 'var' IDENTIFIER ('=' expression)?;
 
 expressionStatement : expression;
 
-parameterNames : IDENTIFIER (',' IDENTIFIER)*;
+parameterNames : (IDENTIFIER (',' IDENTIFIER)*)?;
 
 whileStatement : 'while' '(' expression ')' blockWithBraces;
 
@@ -59,7 +59,7 @@ bracketedExpression : '(' expression ')';
 
 literalExpression : LITERAL;
 
-arguments : expression (',' expression)*;
+arguments : (expression (',' expression)*)?;
 
 IDENTIFIER : [_a-zA-Z][_a-zA-Z0-9]*;
 
