@@ -1,6 +1,6 @@
 package ru.spbau.mit
 
-open class FunException(override val message: String, open val line: Int?) : Exception(message)
+open class FunException(message: String, val line: Int) : Exception(message)
 
 class UndefinedVariableException(message: String, line: Int) : FunException(message, line)
 

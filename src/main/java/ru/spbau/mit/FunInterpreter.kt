@@ -5,8 +5,6 @@ import ru.spbau.mit.parser.FunParser
 
 class FunInterpreter(private val context: Context = Context(), private val out: java.io.PrintStream = System.out) :
         FunBaseVisitor<Int?>() {
-    override fun visitFile(ctx: FunParser.FileContext): Int? = visitBlock(ctx.block())
-
     override fun visitBlock(ctx: FunParser.BlockContext): Int? {
         context.enterScope()
         for (statement in ctx.statement()) {
