@@ -95,7 +95,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
                     leftRes / rightRes
                 }
             "*" -> leftRes * rightRes
-            else -> 0
+            else -> throw UndefinedOperationException("Undefined operation", ctx.start.line)
         }
     }
 
@@ -105,7 +105,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         return when (ctx.op.text) {
             "-" -> leftRes - rightRes
             "+" -> leftRes + rightRes
-            else -> 0
+            else -> throw UndefinedOperationException("Undefined operation", ctx.start.line)
         }
     }
 
@@ -117,7 +117,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
             "<=" -> if (leftRes <= rightRes) 1 else 0
             ">" -> if (leftRes > rightRes) 1 else 0
             "<" -> if (leftRes < rightRes) 1 else 0
-            else -> 0
+            else -> throw UndefinedOperationException("Undefined operation", ctx.start.line)
         }
     }
 
@@ -127,7 +127,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         return when (ctx.op.text) {
             "!=" -> if (leftRes != rightRes) 1 else 0
             "==" -> if (leftRes == rightRes) 1 else 0
-            else -> 0
+            else -> throw UndefinedOperationException("Undefined operation", ctx.start.line)
         }
     }
 
@@ -136,7 +136,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         val rightRes = visit(ctx.expression(1))!!
         return when (ctx.op.text) {
             "&&" -> if (leftRes != 0 && rightRes != 0) 1 else 0
-            else -> 0
+            else -> throw UndefinedOperationException("Undefined operation", ctx.start.line)
         }
     }
 
@@ -145,7 +145,7 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         val rightRes = visit(ctx.expression(1))!!
         return when (ctx.op.text) {
             "||" -> if (leftRes != 0 || rightRes != 0) 1 else 0
-            else -> 0
+            else -> throw UndefinedOperationException("Undefined operation", ctx.start.line)
         }
     }
 
@@ -194,15 +194,14 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     override fun visitFunctionCall(ctx: FunParser.FunctionCallContext): Int {
         val name = ctx.IDENTIFIER().text
         val args = ctx.arguments().expression().map { visit(it) }
-        return if (name == "println") {
-            out.println(args.joinToString(" "))
-            0
-        } else {
-            if (context.isFunctionDefined(name)) {
-                evaluateFunction(context.getFunction(name)!!, args, ctx.start.line)
-            } else {
-                throw UndefinedFunctionException("Undefined function", ctx.start.line)
+        return when {
+            name == "println" -> {
+                out.println(args.joinToString(" "))
+                0
             }
+            context.isFunctionDefined(name) -> evaluateFunction(context.getFunction(name)!!, args, ctx.start.line)
+            else -> throw UndefinedFunctionException("Undefined function", ctx.start.line)
         }
+
     }
 }

@@ -10,6 +10,8 @@ class RedefineFunctionException(message: String, line: Int) : FunException(messa
 
 class UndefinedFunctionException(message: String, line: Int) : FunException(message, line)
 
+class UndefinedOperationException(message: String, line: Int) : FunException(message, line)
+
 class UninitializedVariableException(message: String, line: Int) : FunException(message, line)
 
 class DivisionByZeroException(message: String, line: Int) : FunException(message, line)

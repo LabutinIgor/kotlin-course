@@ -31,11 +31,11 @@ class Context {
     }
 
     fun isVariableDefined(name: String): Boolean {
-        return scopeContexts.asReversed().any { it.containsVariable(name) }
+        return scopeContexts.any { it.containsVariable(name) }
     }
 
     fun isFunctionDefined(name: String): Boolean {
-        return scopeContexts.asReversed().any { it.containsFunction(name) }
+        return scopeContexts.any { it.containsFunction(name) }
     }
 
     fun getVariable(name: String): Int? {
