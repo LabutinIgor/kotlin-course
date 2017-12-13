@@ -13,30 +13,22 @@ class Context {
         scopeContexts.removeAt(scopeContexts.size - 1)
     }
 
-    fun addVariable(name: String, value: Int? = null) {
-        scopeContexts.last().addVariable(name, value)
-    }
+    fun addVariable(name: String, value: Int? = null): Boolean = scopeContexts.last().addVariable(name, value)
 
-    fun addFunction(name: String, value: FunParser.FunctionContext) {
-        scopeContexts.last().addFunction(name, value)
-    }
+    fun addFunction(name: String, value: FunParser.FunctionContext): Boolean =
+            scopeContexts.last().addFunction(name, value)
 
-    fun setVariable(name: String, value: Int) {
+    fun setVariable(name: String, value: Int): Boolean {
         for (context in scopeContexts.asReversed()) {
             if (context.containsVariable(name)) {
                 context.setVariable(name, value)
-                return
+                return true
             }
         }
+        return false
     }
 
-    fun isVariableDefined(name: String): Boolean {
-        return scopeContexts.any { it.containsVariable(name) }
-    }
-
-    fun isFunctionDefined(name: String): Boolean {
-        return scopeContexts.any { it.containsFunction(name) }
-    }
+    fun isVariableDefined(name: String): Boolean = scopeContexts.any { it.containsVariable(name) }
 
     fun getVariable(name: String): Int? {
         for (context in scopeContexts.asReversed()) {
@@ -60,12 +52,22 @@ class Context {
         private val variables: MutableMap<String, Int?> = mutableMapOf()
         private val functions: MutableMap<String, FunParser.FunctionContext> = mutableMapOf()
 
-        fun addVariable(name: String, value: Int?) {
-            variables.put(name, value)
+        fun addVariable(name: String, value: Int?): Boolean {
+            return if (!variables.containsKey(name)) {
+                variables.put(name, value)
+                true
+            } else {
+                false
+            }
         }
 
-        fun addFunction(name: String, value: FunParser.FunctionContext) {
-            functions.put(name, value)
+        fun addFunction(name: String, value: FunParser.FunctionContext): Boolean {
+            return if (!functions.containsKey(name)) {
+                functions.put(name, value)
+                true
+            } else {
+                false
+            }
         }
 
         fun setVariable(name: String, value: Int) {
@@ -78,6 +80,6 @@ class Context {
 
         fun containsFunction(name: String): Boolean = functions.containsKey(name)
 
-        fun getFunction(name: String): FunParser.FunctionContext = functions[name]!!
+        fun getFunction(name: String): FunParser.FunctionContext? = functions[name]
     }
 }

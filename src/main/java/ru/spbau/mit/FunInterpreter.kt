@@ -7,15 +7,15 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         FunBaseVisitor<Int?>() {
     override fun visitBlock(ctx: FunParser.BlockContext): Int? {
         context.enterScope()
+        var res: Int? = null
         for (statement in ctx.statement()) {
-            val res = visit(statement)
+            res = visit(statement)
             if (res != null) {
-                context.leaveScope()
-                return res
+                break
             }
         }
         context.leaveScope()
-        return null
+        return res
     }
 
     override fun visitExpressionStatement(ctx: FunParser.ExpressionStatementContext): Int? {
@@ -26,10 +26,9 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     override fun visitBlockWithBraces(ctx: FunParser.BlockWithBracesContext): Int? = visit(ctx.block())
 
     override fun visitFunction(ctx: FunParser.FunctionContext): Int? {
-        if (context.isFunctionDefined(ctx.IDENTIFIER().text)) {
+        if (!context.addFunction(ctx.IDENTIFIER().text, ctx)) {
             throw RedefineFunctionException("Function redefined", ctx.start.line)
         }
-        context.addFunction(ctx.IDENTIFIER().text, ctx)
         return null
     }
 
@@ -40,10 +39,9 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
         } else {
             null
         }
-        if (context.isVariableDefined(name.text)) {
+        if (!context.addVariable(name.text, value)) {
             throw RedefineVariableException("Variable redefined", ctx.start.line)
         }
-        context.addVariable(name = name.text, value = value)
         return null
     }
 
@@ -69,10 +67,9 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     }
 
     override fun visitAssignment(ctx: FunParser.AssignmentContext): Int? {
-        if (!context.isVariableDefined(ctx.IDENTIFIER().text)) {
+        if (!context.setVariable(ctx.IDENTIFIER().text, visit(ctx.expression())!!)) {
             throw UndefinedVariableException("Undefined variable", ctx.start.line)
         }
-        context.setVariable(ctx.IDENTIFIER().text, visit(ctx.expression())!!)
         return null
     }
 
@@ -194,14 +191,14 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
     override fun visitFunctionCall(ctx: FunParser.FunctionCallContext): Int {
         val name = ctx.IDENTIFIER().text
         val args = ctx.arguments().expression().map { visit(it) }
+        val func = context.getFunction(name)
         return when {
             name == "println" -> {
                 out.println(args.joinToString(" "))
                 0
             }
-            context.isFunctionDefined(name) -> evaluateFunction(context.getFunction(name)!!, args, ctx.start.line)
+            func != null -> evaluateFunction(func, args, ctx.start.line)
             else -> throw UndefinedFunctionException("Undefined function", ctx.start.line)
         }
-
     }
 }

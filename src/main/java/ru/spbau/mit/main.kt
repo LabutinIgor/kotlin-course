@@ -17,10 +17,10 @@ fun main(args: Array<String>) {
 
     val charStream: CharStream = try {
         CharStreams.fromFileName(args[0])
-    } catch (e: java.nio.file.NoSuchFileException) {
+    } catch (e: NoSuchFileException) {
         println("File not found")
         System.exit(1)
-        CharStreams.fromString("")
+        return
     }
 
     val lexer = FunLexer(charStream)
