@@ -181,7 +181,9 @@ class FunInterpreter(private val context: Context = Context(), private val out: 
 
         context.enterScope()
         for (i in 0 until names.size) {
-            context.addVariable(names[i], args[i])
+            if (!context.addVariable(names[i], args[i])) {
+                throw RedefineVariableException("Variable redefined", line)
+            }
         }
         val res = visit(function.blockWithBraces())
         context.leaveScope()
