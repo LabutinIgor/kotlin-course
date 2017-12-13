@@ -6,16 +6,15 @@ import ru.spbau.mit.parser.FunParser
 class FunInterpreter(private val context: Context = Context(), private val out: java.io.PrintStream = System.out) :
         FunBaseVisitor<Int?>() {
     override fun visitBlock(ctx: FunParser.BlockContext): Int? {
-        context.enterScope()
-        var res: Int? = null
-        for (statement in ctx.statement()) {
-            res = visit(statement)
-            if (res != null) {
-                break
+        return context.withScope ({
+            for (statement in ctx.statement()) {
+                val res = visit(statement)
+                if (res != null) {
+                    return@withScope res
+                }
             }
-        }
-        context.leaveScope()
-        return res
+            return@withScope 0
+        })
     }
 
     override fun visitExpressionStatement(ctx: FunParser.ExpressionStatementContext): Int? {

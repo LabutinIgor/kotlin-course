@@ -13,6 +13,13 @@ class Context {
         scopeContexts.removeAt(scopeContexts.size - 1)
     }
 
+    fun withScope(computation: () -> Int): Int {
+        enterScope()
+        val res = computation()
+        leaveScope()
+        return res
+    }
+
     fun addVariable(name: String, value: Int? = null): Boolean = scopeContexts.last().addVariable(name, value)
 
     fun addFunction(name: String, value: FunParser.FunctionContext): Boolean =
