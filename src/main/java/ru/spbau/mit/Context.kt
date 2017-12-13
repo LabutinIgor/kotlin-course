@@ -13,7 +13,7 @@ class Context {
         scopeContexts.removeAt(scopeContexts.size - 1)
     }
 
-    fun withScope(computation: () -> Int): Int {
+    fun withScope(computation: () -> Int?): Int? {
         enterScope()
         val res = computation()
         leaveScope()
