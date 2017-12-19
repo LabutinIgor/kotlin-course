@@ -174,15 +174,13 @@ class Frame(simpleAttributes: List<String>, attributesWithValue: Map<String, Str
         MultiLineCommand("frame", simpleAttributes, attributesWithValue)
 
 class CustomCommand(name: String, simpleAttributes: List<String>, attributesWithValue: Map<String, String>) :
-        MultiLineCommand(name, simpleAttributes, attributesWithValue) {
-}
+        MultiLineCommand(name, simpleAttributes, attributesWithValue)
 
 class CustomOneLineCommand(name: String,
                            value: String,
                            simpleAttributes: List<String>,
                            attributesWithValue: Map<String, String>) :
-        OneLineCommand(name, value, simpleAttributes, attributesWithValue) {
-}
+        OneLineCommand(name, value, simpleAttributes, attributesWithValue)
 
 abstract class CommandWithItem(name: String) : MultiLineCommand(name) {
     fun item(value: String = "", simpleAttributes: List<String> = listOf(),
@@ -196,8 +194,7 @@ class Itemize : CommandWithItem("itemize")
 class Enumerate : CommandWithItem("enumerate")
 
 class Item(value: String, simpleAttributes: List<String>, attributesWithValue: Map<String, String>) :
-        OneLineCommand("item", value, simpleAttributes, attributesWithValue) {
-}
+        OneLineCommand("item", value, simpleAttributes, attributesWithValue)
 
 class Math : MultiLineCommand("math")
 
