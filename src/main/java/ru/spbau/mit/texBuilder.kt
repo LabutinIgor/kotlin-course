@@ -43,7 +43,7 @@ abstract class Command(val name: String,
     }
 
     fun renderAttributes(): String {
-        val attributesToPrint: List<String> = simpleAttributes.toMutableList() +
+        val attributesToPrint: List<String> = simpleAttributes +
                 attributesWithValue.map { it.key + "=" + it.value }.toList()
         val builder = StringBuilder()
         if (attributesToPrint.isNotEmpty()) {
