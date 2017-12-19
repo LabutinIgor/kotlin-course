@@ -43,11 +43,8 @@ abstract class Command(val name: String,
     }
 
     fun renderAttributes(): String {
-        val attributesToPrint: MutableList<String> = mutableListOf()
-        attributesToPrint += simpleAttributes
-        for ((attr, value) in attributesWithValue) {
-            attributesToPrint.add("$attr=$value")
-        }
+        val attributesToPrint: List<String> = simpleAttributes.toMutableList() +
+                attributesWithValue.map { it.key + "=" + it.value }.toList()
         val builder = StringBuilder()
         if (attributesToPrint.isNotEmpty()) {
             builder.append("[")
