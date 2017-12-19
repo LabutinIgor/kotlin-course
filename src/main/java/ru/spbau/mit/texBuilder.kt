@@ -1,17 +1,19 @@
 package ru.spbau.mit
 
 import java.io.OutputStream
-import java.io.PrintWriter
+import java.io.OutputStreamWriter
+import java.io.StringWriter
+import java.io.Writer
 
 
 interface Element {
-    fun render(builder: StringBuilder, indent: String)
+    fun write(out: Writer, indent: String)
 }
 
 class TextElement(private val text: String) : Element {
-    override fun render(builder: StringBuilder, indent: String) {
+    override fun write(out: Writer, indent: String) {
         val indentedText = text.replace("\n", "\n" + indent)
-        builder.append("$indent$indentedText\n")
+        out.write("$indent$indentedText\n")
     }
 }
 
@@ -31,32 +33,32 @@ abstract class Command(val name: String,
     }
 
     override fun toString(): String {
-        val builder = StringBuilder()
-        render(builder, "")
-        return builder.toString()
+        val writer = StringWriter()
+        write(writer, "")
+        return writer.toString()
+
     }
 
-    fun toOutputStream(out: OutputStream) {
-        val printWriter = PrintWriter(out)
-        printWriter.print(this)
-        printWriter.close()
+    fun toOutputStream(stream: OutputStream) {
+        val writer = OutputStreamWriter(stream)
+        write(writer, "")
+        writer.close()
     }
 
-    fun renderAttributes(): String {
+    fun writeAttributes(out: Writer): String {
         val attributesToPrint: List<String> = simpleAttributes +
                 attributesWithValue.map { it.key + "=" + it.value }.toList()
-        val builder = StringBuilder()
         if (attributesToPrint.isNotEmpty()) {
-            builder.append("[")
-            builder.append(attributesToPrint.joinToString(", "))
-            builder.append("]")
+            out.write("[")
+            out.write(attributesToPrint.joinToString(", "))
+            out.write("]")
         }
-        return builder.toString()
+        return out.toString()
     }
 
-    fun renderChildren(builder: StringBuilder, indent: String) {
+    fun writeChildren(out: Writer, indent: String) {
         for (c in children) {
-            c.render(builder, indent)
+            c.write(out, indent)
         }
     }
 
@@ -104,10 +106,12 @@ abstract class MultiLineCommand(name: String,
                                 attributesWithValue: Map<String, String> = mapOf()) :
         Command(name, simpleAttributes, attributesWithValue) {
 
-    override fun render(builder: StringBuilder, indent: String) {
-        builder.append("$indent\\begin{$name}${renderAttributes()}\n")
-        renderChildren(builder, indent + "  ")
-        builder.append("$indent\\end{$name}\n")
+    override fun write(out: Writer, indent: String) {
+        out.write("$indent\\begin{$name}")
+        writeAttributes(out)
+        out.write("\n")
+        writeChildren(out, indent + "  ")
+        out.write("$indent\\end{$name}\n")
     }
 }
 
@@ -117,19 +121,20 @@ abstract class OneLineCommand(name: String,
                               attributesWithValue: Map<String, String> = mapOf()) :
         Command(name, simpleAttributes, attributesWithValue) {
 
-    override fun render(builder: StringBuilder, indent: String) {
-        builder.append("$indent\\$name${renderAttributes()}")
+    override fun write(out: Writer, indent: String) {
+        out.write("$indent\\$name")
+        writeAttributes(out)
         if (value != "") {
-            builder.append("{$value}")
+            out.write("{$value}")
         }
-        builder.append("\n")
-        renderChildren(builder, indent + "  ")
+        out.write("\n")
+        writeChildren(out, indent + "  ")
     }
 }
 
 class Tex : Command("") {
-    override fun render(builder: StringBuilder, indent: String) {
-        renderChildren(builder, indent)
+    override fun write(out: Writer, indent: String) {
+        writeChildren(out, indent)
     }
 
     fun documentClass(value: String,
