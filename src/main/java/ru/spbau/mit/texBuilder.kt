@@ -19,7 +19,8 @@ class TextElement(private val text: String) : Element {
 annotation class TexCommandMarker
 
 @TexCommandMarker
-abstract class Command(val name: String, private val simpleAttributes: List<String> = listOf(),
+abstract class Command(val name: String,
+                       private val simpleAttributes: List<String> = listOf(),
                        private val attributesWithValue: Map<String, String> = mapOf()) : Element {
     val children = arrayListOf<Element>()
 
@@ -70,9 +71,18 @@ abstract class Command(val name: String, private val simpleAttributes: List<Stri
 
     fun enumerate(init: Enumerate.() -> Unit) = initCommand(Enumerate(), init)
 
-    fun customCommand(name: String, simpleAttributes: List<String> = listOf(),
-                      attributesWithValue: Map<String, String> = mapOf(), init: CustomCommand.() -> Unit) {
+    fun customCommand(name: String,
+                      simpleAttributes: List<String> = listOf(),
+                      attributesWithValue: Map<String, String> = mapOf(),
+                      init: CustomCommand.() -> Unit) {
         initCommand(CustomCommand(name, simpleAttributes, attributesWithValue), init)
+    }
+
+    fun customCommand(name: String,
+                      value: String,
+                      simpleAttributes: List<String> = listOf(),
+                      attributesWithValue: Map<String, String> = mapOf()) {
+        initCommand(CustomOneLineCommand(name, value, simpleAttributes, attributesWithValue), {})
     }
 
     fun math(init: Math.() -> Unit) {
@@ -92,9 +102,11 @@ abstract class Command(val name: String, private val simpleAttributes: List<Stri
     }
 }
 
-abstract class MultiLineCommand(name: String, simpleAttributes: List<String> = listOf(),
+abstract class MultiLineCommand(name: String,
+                                simpleAttributes: List<String> = listOf(),
                                 attributesWithValue: Map<String, String> = mapOf()) :
         Command(name, simpleAttributes, attributesWithValue) {
+
     override fun render(builder: StringBuilder, indent: String) {
         builder.append("$indent\\begin{$name}${renderAttributes()}\n")
         renderChildren(builder, indent + "  ")
@@ -102,9 +114,12 @@ abstract class MultiLineCommand(name: String, simpleAttributes: List<String> = l
     }
 }
 
-abstract class OneLineCommand(name: String, private val value: String, simpleAttributes: List<String> = listOf(),
+abstract class OneLineCommand(name: String,
+                              private val value: String,
+                              simpleAttributes: List<String> = listOf(),
                               attributesWithValue: Map<String, String> = mapOf()) :
         Command(name, simpleAttributes, attributesWithValue) {
+
     override fun render(builder: StringBuilder, indent: String) {
         builder.append("$indent\\$name${renderAttributes()}")
         if (value != "") {
@@ -120,12 +135,14 @@ class Tex : Command("") {
         renderChildren(builder, indent)
     }
 
-    fun documentClass(value: String, simpleAttributes: List<String> = listOf(),
+    fun documentClass(value: String,
+                      simpleAttributes: List<String> = listOf(),
                       attributesWithValue: Map<String, String> = mapOf()) {
         initCommand(DocumentClass(value, simpleAttributes, attributesWithValue), {})
     }
 
-    fun usePackage(value: String, simpleAttributes: List<String> = listOf(),
+    fun usePackage(value: String,
+                   simpleAttributes: List<String> = listOf(),
                    attributesWithValue: Map<String, String> = mapOf()) {
         initCommand(UsePackage(value, simpleAttributes, attributesWithValue), {})
     }
@@ -135,10 +152,11 @@ class Tex : Command("") {
     }
 }
 
-class Document()
-    : MultiLineCommand("document") {
-    fun frame(frameTitle: String, simpleAttributes: List<String> = listOf(),
-              attributesWithValue: Map<String, String> = mapOf(), init: Frame.() -> Unit) {
+class Document : MultiLineCommand("document") {
+    fun frame(frameTitle: String,
+              simpleAttributes: List<String> = listOf(),
+              attributesWithValue: Map<String, String> = mapOf(),
+              init: Frame.() -> Unit) {
         val frame = initCommand(Frame(simpleAttributes, attributesWithValue), init)
         frame.children.add(0, FrameTitle(frameTitle))
     }
@@ -157,6 +175,13 @@ class Frame(simpleAttributes: List<String>, attributesWithValue: Map<String, Str
 
 class CustomCommand(name: String, simpleAttributes: List<String>, attributesWithValue: Map<String, String>) :
         MultiLineCommand(name, simpleAttributes, attributesWithValue) {
+}
+
+class CustomOneLineCommand(name: String,
+                           value: String,
+                           simpleAttributes: List<String>,
+                           attributesWithValue: Map<String, String>) :
+        OneLineCommand(name, value, simpleAttributes, attributesWithValue) {
 }
 
 abstract class CommandWithItem(name: String) : MultiLineCommand(name) {
@@ -182,11 +207,7 @@ class FlushLeft : MultiLineCommand("flushleft")
 
 class FlushRight : MultiLineCommand("flushright")
 
-fun tex(init: Tex.() -> Unit): Tex {
-    val tex = Tex()
-    tex.init()
-    return tex
-}
+fun tex(init: Tex.() -> Unit): Tex = Tex().apply(init)
 
 fun main(args: Array<String>) {
     val rows = listOf("first", "second")
@@ -214,7 +235,7 @@ fun main(args: Array<String>) {
                         }
                     }
                 }
-                //begin { pyglist }[language = kotlin]...\end{ pyglist }
+//                begin { pyglist }[language = kotlin]...\end{ pyglist }
                 customCommand(name = "pyglist", attributesWithValue = mapOf("language" to "kotlin")) {
                     +"""
                        |fun main(args: Array<String>) {
@@ -222,6 +243,8 @@ fun main(args: Array<String>) {
                        |}
                     """.trimMargin()
                 }
+//                \foobar{fizz buzz}
+                customCommand(name = "foobar", value = "fizz buzz")
             }
         }
     }.toOutputStream(System.out)
