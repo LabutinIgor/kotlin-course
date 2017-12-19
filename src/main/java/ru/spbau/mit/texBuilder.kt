@@ -40,18 +40,16 @@ abstract class Command(val name: String,
     }
 
     fun toOutputStream(stream: OutputStream) {
-        val writer = OutputStreamWriter(stream)
-        write(writer, "")
-        writer.close()
+        OutputStreamWriter(stream).use {
+            write(it, "")
+        }
     }
 
     fun writeAttributes(out: Writer): String {
         val attributesToPrint: List<String> = simpleAttributes +
                 attributesWithValue.map { it.key + "=" + it.value }.toList()
         if (attributesToPrint.isNotEmpty()) {
-            out.write("[")
-            out.write(attributesToPrint.joinToString(", "))
-            out.write("]")
+            out.write(attributesToPrint.joinToString(", ", "[", "]"))
         }
         return out.toString()
     }
