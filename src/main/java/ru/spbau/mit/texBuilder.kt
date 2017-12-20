@@ -15,17 +15,6 @@ class TextElement(out: Writer, indent: String, private val text: String) : Eleme
     }
 }
 
-fun <T : MultiLineCommand> writeCommand(command: T, init: T.() -> Unit) {
-    command.writeStart()
-    command.init()
-    command.writeEnd()
-}
-
-fun <T : OneLineCommand> writeCommand(command: T, init: T.() -> Unit) {
-    command.write()
-    command.init()
-}
-
 @DslMarker
 annotation class TexCommandMarker
 
@@ -37,7 +26,7 @@ abstract class Command(val name: String,
                        private val attributesWithValue: Map<String, String> = mapOf()) : Element(out, indent) {
     fun writeAttributes() {
         val attributesToPrint: List<String> = simpleAttributes +
-                attributesWithValue.map { it.key + "=" + it.value }.toList()
+                attributesWithValue.map { it.key + "=" + it.value }
         if (attributesToPrint.isNotEmpty()) {
             out.write(attributesToPrint.joinToString(", ", "[", "]"))
         }
@@ -48,18 +37,19 @@ abstract class Command(val name: String,
     }
 
     fun itemize(init: Itemize.() -> Unit) {
-        writeCommand(Itemize(out, indent + "  "), init)
+        MultiLineCommand.writeCommand(Itemize(out, indent + "  "), init)
     }
 
     fun enumerate(init: Enumerate.() -> Unit) {
-        writeCommand(Enumerate(out, indent + "  "), init)
+        MultiLineCommand.writeCommand(Enumerate(out, indent + "  "), init)
     }
 
     fun customCommand(name: String,
                       simpleAttributes: List<String> = listOf(),
                       attributesWithValue: Map<String, String> = mapOf(),
                       init: CustomCommand.() -> Unit) {
-        writeCommand(CustomCommand(name, out, indent + "  ", simpleAttributes, attributesWithValue), init)
+        MultiLineCommand.writeCommand(CustomCommand(name, out, indent + "  ", simpleAttributes,
+                attributesWithValue), init)
     }
 
     fun customCommand(name: String,
@@ -70,19 +60,19 @@ abstract class Command(val name: String,
     }
 
     fun math(init: Math.() -> Unit) {
-        writeCommand(Math(out, indent + "  "), init)
+        MultiLineCommand.writeCommand(Math(out, indent + "  "), init)
     }
 
     fun center(init: Center.() -> Unit) {
-        writeCommand(Center(out, indent + "  "), init)
+        MultiLineCommand.writeCommand(Center(out, indent + "  "), init)
     }
 
     fun flushLeft(init: FlushLeft.() -> Unit) {
-        writeCommand(FlushLeft(out, indent + "  "), init)
+        MultiLineCommand.writeCommand(FlushLeft(out, indent + "  "), init)
     }
 
     fun flushRight(init: FlushRight.() -> Unit) {
-        writeCommand(FlushRight(out, indent + "  "), init)
+        MultiLineCommand.writeCommand(FlushRight(out, indent + "  "), init)
     }
 }
 
@@ -102,6 +92,14 @@ abstract class MultiLineCommand(name: String,
     fun writeEnd() {
         out.write("$indent\\end{$name}\n")
     }
+
+    companion object {
+        fun <T : MultiLineCommand> writeCommand(command: T, init: T.() -> Unit) {
+            command.writeStart()
+            command.init()
+            command.writeEnd()
+        }
+    }
 }
 
 abstract class OneLineCommand(name: String,
@@ -119,6 +117,13 @@ abstract class OneLineCommand(name: String,
             out.write("{$value}")
         }
         out.write("\n")
+    }
+
+    companion object {
+        fun <T : OneLineCommand> writeCommand(command: T, init: T.() -> Unit) {
+            command.write()
+            command.init()
+        }
     }
 }
 
@@ -151,7 +156,7 @@ class Tex(out: Writer, indent: String = "") :
     }
 
     fun document(init: Document.() -> Unit) {
-        writeCommand(Document(out, indent), init)
+        MultiLineCommand.writeCommand(Document(out, indent), init)
     }
 }
 
@@ -209,7 +214,8 @@ abstract class CommandWithItem(name: String, out: Writer, indent: String = "") :
     fun item(value: String = "",
              simpleAttributes: List<String> = listOf(),
              attributesWithValue: Map<String, String> = mapOf(), init: Item.() -> Unit) {
-        writeCommand(Item(out, indent + "  ", value, simpleAttributes, attributesWithValue), init)
+        OneLineCommand.writeCommand(Item(out, indent + "  ", value, simpleAttributes, attributesWithValue),
+                init)
     }
 }
 
