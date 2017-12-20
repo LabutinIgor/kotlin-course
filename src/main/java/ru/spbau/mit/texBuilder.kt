@@ -8,13 +8,6 @@ import java.io.Writer
 
 abstract class Element(val out: Writer, val indent: String)
 
-class TextElement(out: Writer, indent: String, private val text: String) : Element(out, indent) {
-    fun write() {
-        val indentedText = text.replace("\n", "\n" + indent)
-        out.write("$indent$indentedText\n")
-    }
-}
-
 @DslMarker
 annotation class TexCommandMarker
 
@@ -33,7 +26,8 @@ abstract class Command(val name: String,
     }
 
     operator fun String.unaryPlus() {
-        TextElement(out, indent + "  ", this).write()
+        val indentedText = this.replace("\n", "\n" + indent + "  ")
+        out.write("$indent  $indentedText\n")
     }
 
     fun itemize(init: Itemize.() -> Unit) {
