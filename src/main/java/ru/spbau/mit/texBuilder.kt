@@ -6,15 +6,24 @@ import java.io.StringWriter
 import java.io.Writer
 
 
-interface Element {
-    fun write(out: Writer, indent: String)
-}
+abstract class Element(val out: Writer, val indent: String)
 
-class TextElement(private val text: String) : Element {
-    override fun write(out: Writer, indent: String) {
+class TextElement(out: Writer, indent: String, private val text: String) : Element(out, indent) {
+    fun write() {
         val indentedText = text.replace("\n", "\n" + indent)
         out.write("$indent$indentedText\n")
     }
+}
+
+fun <T : MultiLineCommand> writeCommand(command: T, init: T.() -> Unit) {
+    command.writeStart()
+    command.init()
+    command.writeEnd()
+}
+
+fun <T : OneLineCommand> writeCommand(command: T, init: T.() -> Unit) {
+    command.write()
+    command.init()
 }
 
 @DslMarker
@@ -22,189 +31,208 @@ annotation class TexCommandMarker
 
 @TexCommandMarker
 abstract class Command(val name: String,
+                       out: Writer,
+                       indent: String,
                        private val simpleAttributes: List<String> = listOf(),
-                       private val attributesWithValue: Map<String, String> = mapOf()) : Element {
-    val children = arrayListOf<Element>()
-
-    protected fun <T : Element> initCommand(command: T, init: T.() -> Unit): T {
-        command.init()
-        children.add(command)
-        return command
-    }
-
-    override fun toString(): String {
-        val writer = StringWriter()
-        write(writer, "")
-        return writer.toString()
-
-    }
-
-    fun toOutputStream(stream: OutputStream) {
-        OutputStreamWriter(stream).use {
-            write(it, "")
-        }
-    }
-
-    fun writeAttributes(out: Writer): String {
+                       private val attributesWithValue: Map<String, String> = mapOf()) : Element(out, indent) {
+    fun writeAttributes() {
         val attributesToPrint: List<String> = simpleAttributes +
                 attributesWithValue.map { it.key + "=" + it.value }.toList()
         if (attributesToPrint.isNotEmpty()) {
             out.write(attributesToPrint.joinToString(", ", "[", "]"))
         }
-        return out.toString()
-    }
-
-    fun writeChildren(out: Writer, indent: String) {
-        for (c in children) {
-            c.write(out, indent)
-        }
     }
 
     operator fun String.unaryPlus() {
-        children.add(TextElement(this))
+        TextElement(out, indent + "  ", this).write()
     }
 
-    fun itemize(init: Itemize.() -> Unit) = initCommand(Itemize(), init)
+    fun itemize(init: Itemize.() -> Unit) {
+        writeCommand(Itemize(out, indent + "  "), init)
+    }
 
-    fun enumerate(init: Enumerate.() -> Unit) = initCommand(Enumerate(), init)
+    fun enumerate(init: Enumerate.() -> Unit) {
+        writeCommand(Enumerate(out, indent + "  "), init)
+    }
 
     fun customCommand(name: String,
                       simpleAttributes: List<String> = listOf(),
                       attributesWithValue: Map<String, String> = mapOf(),
                       init: CustomCommand.() -> Unit) {
-        initCommand(CustomCommand(name, simpleAttributes, attributesWithValue), init)
+        writeCommand(CustomCommand(name, out, indent + "  ", simpleAttributes, attributesWithValue), init)
     }
 
     fun customCommand(name: String,
                       value: String,
                       simpleAttributes: List<String> = listOf(),
                       attributesWithValue: Map<String, String> = mapOf()) {
-        initCommand(CustomOneLineCommand(name, value, simpleAttributes, attributesWithValue), {})
+        CustomOneLineCommand(name, out, indent + "  ", value, simpleAttributes, attributesWithValue).write()
     }
 
     fun math(init: Math.() -> Unit) {
-        initCommand(Math(), init)
+        writeCommand(Math(out, indent + "  "), init)
     }
 
     fun center(init: Center.() -> Unit) {
-        initCommand(Center(), init)
+        writeCommand(Center(out, indent + "  "), init)
     }
 
     fun flushLeft(init: FlushLeft.() -> Unit) {
-        initCommand(FlushLeft(), init)
+        writeCommand(FlushLeft(out, indent + "  "), init)
     }
 
     fun flushRight(init: FlushRight.() -> Unit) {
-        initCommand(FlushRight(), init)
+        writeCommand(FlushRight(out, indent + "  "), init)
     }
 }
 
 abstract class MultiLineCommand(name: String,
+                                out: Writer,
+                                indent: String,
                                 simpleAttributes: List<String> = listOf(),
                                 attributesWithValue: Map<String, String> = mapOf()) :
-        Command(name, simpleAttributes, attributesWithValue) {
+        Command(name, out, indent, simpleAttributes, attributesWithValue) {
 
-    override fun write(out: Writer, indent: String) {
+    fun writeStart() {
         out.write("$indent\\begin{$name}")
-        writeAttributes(out)
+        writeAttributes()
         out.write("\n")
-        writeChildren(out, indent + "  ")
+    }
+
+    fun writeEnd() {
         out.write("$indent\\end{$name}\n")
     }
 }
 
 abstract class OneLineCommand(name: String,
+                              out: Writer,
+                              indent: String,
                               private val value: String,
                               simpleAttributes: List<String> = listOf(),
                               attributesWithValue: Map<String, String> = mapOf()) :
-        Command(name, simpleAttributes, attributesWithValue) {
+        Command(name, out, indent, simpleAttributes, attributesWithValue) {
 
-    override fun write(out: Writer, indent: String) {
+    fun write() {
         out.write("$indent\\$name")
-        writeAttributes(out)
+        writeAttributes()
         if (value != "") {
             out.write("{$value}")
         }
         out.write("\n")
-        writeChildren(out, indent + "  ")
     }
 }
 
-class Tex : Command("") {
-    override fun write(out: Writer, indent: String) {
-        writeChildren(out, indent)
+class TexWriter(private val init: Tex.() -> Unit) {
+    override fun toString(): String {
+        val out = StringWriter()
+        Tex(out).init()
+        return out.toString()
     }
 
+    fun toOutputStream(out: OutputStream) {
+        OutputStreamWriter(out).use {
+            Tex(it).init()
+        }
+    }
+}
+
+class Tex(out: Writer, indent: String = "") :
+        Command("", out, indent) {
     fun documentClass(value: String,
                       simpleAttributes: List<String> = listOf(),
                       attributesWithValue: Map<String, String> = mapOf()) {
-        initCommand(DocumentClass(value, simpleAttributes, attributesWithValue), {})
+        DocumentClass(out, indent, value, simpleAttributes, attributesWithValue).write()
     }
 
     fun usePackage(value: String,
                    simpleAttributes: List<String> = listOf(),
                    attributesWithValue: Map<String, String> = mapOf()) {
-        initCommand(UsePackage(value, simpleAttributes, attributesWithValue), {})
+        UsePackage(out, indent, value, simpleAttributes, attributesWithValue).write()
     }
 
     fun document(init: Document.() -> Unit) {
-        initCommand(Document(), init)
+        writeCommand(Document(out, indent), init)
     }
 }
 
-class Document : MultiLineCommand("document") {
+class Document(out: Writer, indent: String = "") : MultiLineCommand("document", out, indent) {
     fun frame(frameTitle: String,
               simpleAttributes: List<String> = listOf(),
               attributesWithValue: Map<String, String> = mapOf(),
               init: Frame.() -> Unit) {
-        val frame = initCommand(Frame(simpleAttributes, attributesWithValue), init)
-        frame.children.add(0, FrameTitle(frameTitle))
+        val child = Frame(out, indent + "  ", simpleAttributes, attributesWithValue)
+        child.writeStart()
+        FrameTitle(out, indent + "    ", frameTitle).write()
+        child.init()
+        child.writeEnd()
     }
 }
 
-class FrameTitle(value: String) : OneLineCommand("frametitle", value)
+class DocumentClass(out: Writer,
+                    indent: String = "",
+                    value: String,
+                    simpleAttributes: List<String>,
+                    attributesWithValue: Map<String, String>) :
+        OneLineCommand("documentclass", out, indent, value, simpleAttributes, attributesWithValue)
 
-class DocumentClass(value: String, simpleAttributes: List<String>, attributesWithValue: Map<String, String>) :
-        OneLineCommand("documentclass", value, simpleAttributes, attributesWithValue)
+class UsePackage(out: Writer,
+                 indent: String = "",
+                 value: String,
+                 simpleAttributes: List<String>,
+                 attributesWithValue: Map<String, String>) :
+        OneLineCommand("usepackage", out, indent, value, simpleAttributes, attributesWithValue)
 
-class UsePackage(value: String, simpleAttributes: List<String>, attributesWithValue: Map<String, String>) :
-        OneLineCommand("usepackage", value, simpleAttributes, attributesWithValue)
+class FrameTitle(out: Writer, indent: String = "", value: String) : OneLineCommand("frametitle", out, indent, value)
 
-class Frame(simpleAttributes: List<String>, attributesWithValue: Map<String, String>) :
-        MultiLineCommand("frame", simpleAttributes, attributesWithValue)
+class Frame(out: Writer,
+            indent: String = "",
+            simpleAttributes: List<String>,
+            attributesWithValue: Map<String, String>) :
+        MultiLineCommand("frame", out, indent, simpleAttributes, attributesWithValue)
 
-class CustomCommand(name: String, simpleAttributes: List<String>, attributesWithValue: Map<String, String>) :
-        MultiLineCommand(name, simpleAttributes, attributesWithValue)
+class CustomCommand(name: String,
+                    out: Writer,
+                    indent: String = "",
+                    simpleAttributes: List<String>,
+                    attributesWithValue: Map<String, String>) :
+        MultiLineCommand(name, out, indent, simpleAttributes, attributesWithValue)
 
 class CustomOneLineCommand(name: String,
+                           out: Writer,
+                           indent: String = "",
                            value: String,
                            simpleAttributes: List<String>,
                            attributesWithValue: Map<String, String>) :
-        OneLineCommand(name, value, simpleAttributes, attributesWithValue)
+        OneLineCommand(name, out, indent, value, simpleAttributes, attributesWithValue)
 
-abstract class CommandWithItem(name: String) : MultiLineCommand(name) {
-    fun item(value: String = "", simpleAttributes: List<String> = listOf(),
+abstract class CommandWithItem(name: String, out: Writer, indent: String = "") : MultiLineCommand(name, out, indent) {
+    fun item(value: String = "",
+             simpleAttributes: List<String> = listOf(),
              attributesWithValue: Map<String, String> = mapOf(), init: Item.() -> Unit) {
-        initCommand(Item(value, simpleAttributes, attributesWithValue), init)
+        writeCommand(Item(out, indent + "  ", value, simpleAttributes, attributesWithValue), init)
     }
 }
 
-class Itemize : CommandWithItem("itemize")
+class Itemize(out: Writer, indent: String = "") : CommandWithItem("itemize", out, indent)
 
-class Enumerate : CommandWithItem("enumerate")
+class Enumerate(out: Writer, indent: String = "") : CommandWithItem("enumerate", out, indent)
 
-class Item(value: String, simpleAttributes: List<String>, attributesWithValue: Map<String, String>) :
-        OneLineCommand("item", value, simpleAttributes, attributesWithValue)
+class Item(out: Writer,
+           indent: String = "",
+           value: String,
+           simpleAttributes: List<String>,
+           attributesWithValue: Map<String, String>) :
+        OneLineCommand("item", out, indent, value, simpleAttributes, attributesWithValue)
 
-class Math : MultiLineCommand("math")
+class Math(out: Writer, indent: String = "") : MultiLineCommand("math", out, indent)
 
-class Center : MultiLineCommand("center")
+class Center(out: Writer, indent: String = "") : MultiLineCommand("center", out, indent)
 
-class FlushLeft : MultiLineCommand("flushleft")
+class FlushLeft(out: Writer, indent: String = "") : MultiLineCommand("flushleft", out, indent)
 
-class FlushRight : MultiLineCommand("flushright")
+class FlushRight(out: Writer, indent: String = "") : MultiLineCommand("flushright", out, indent)
 
-fun tex(init: Tex.() -> Unit): Tex = Tex().apply(init)
+fun tex(init: Tex.() -> Unit): TexWriter = TexWriter(init)
 
 fun main(args: Array<String>) {
     val rows = listOf("first", "second")
