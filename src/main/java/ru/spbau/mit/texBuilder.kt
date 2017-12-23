@@ -6,17 +6,16 @@ import java.io.StringWriter
 import java.io.Writer
 
 
-abstract class Element(val out: Writer, val indent: String)
 
 @DslMarker
 annotation class TexCommandMarker
 
 @TexCommandMarker
 abstract class Command(val name: String,
-                       out: Writer,
-                       indent: String,
+                       val out: Writer,
+                       val indent: String,
                        private val simpleAttributes: List<String> = listOf(),
-                       private val attributesWithValue: Map<String, String> = mapOf()) : Element(out, indent) {
+                       private val attributesWithValue: Map<String, String> = mapOf()) {
     fun writeAttributes() {
         val attributesToPrint: List<String> = simpleAttributes +
                 attributesWithValue.map { it.key + "=" + it.value }
